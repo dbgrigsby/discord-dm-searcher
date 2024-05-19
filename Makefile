@@ -15,4 +15,4 @@ ingest_data:
 
 search:
 	@echo "To search, use the following command:"
-	@echo "$(PYTHON) src/search_messages.py [--no-cost] search_term"
+	@echo "$(PYTHON) -m src.search_messages [--no-cost] search_term"

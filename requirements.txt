@@ -1,3 +1,4 @@
 tqdm
 discord.py
 openai
+numpy

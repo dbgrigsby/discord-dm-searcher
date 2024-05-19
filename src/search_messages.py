@@ -1,9 +1,8 @@
 import argparse
-import openai
 import sqlite3
-import os
-import sys
 import json
+import numpy as np
+from src.utils import initialize_openai
 
 # Command-line argument parsing
 parser = argparse.ArgumentParser(description="Search Discord DMs")
@@ -11,50 +10,37 @@ parser.add_argument('search_term', type=str, nargs='*', help='Search term')
 parser.add_argument('--no-cost', action='store_true', help='Skip ChatGPT interaction')
 args = parser.parse_args()
 
-# Function to get OpenAI key
-def get_openai_key():
-    openai_key = os.getenv("OPENAI_KEY")
-    if not openai_key:
-        try:
-            with open("OPENAI_KEY.txt", "r") as file:
-                openai_key = file.read().strip()
-        except FileNotFoundError:
-            pass
-    return openai_key
-
-# Check if the OpenAI key is needed and set
-if not args.no_cost:
-    openai_key = get_openai_key()
-    if not openai_key:
-        print("Error: The OPENAI_KEY environment variable is not set and OPENAI_KEY.txt is missing.")
-        print("Please set the key using 'export OPENAI_KEY=your_openai_key_here' or create an OPENAI_KEY.txt file.")
-        sys.exit(1)
-
-client = openai.OpenAI(api_key=get_openai_key())
+client = initialize_openai()
 
 DATABASE_PATH = 'database/messages.db'
 
 def get_search_keywords(query):
-    prompt = f"Given the query: '{query}', return with ONLY A JSON blob of keywords to search for specific chat history between two friends."
+    prompt = f"""Given the query: '{query}', return ONLY A JSON blob of keywords to search for specific chat history between two friends. 
+    Focus on phrases and expressions that people might use in the context of the query. Exclude common words like 'Rave' and 'Cas'. ONLY RESPOND WITH JSON."""
     print("Starting OpenAI call to get search keywords...")
-    response = client.chat.completions.create(model="gpt-4o",
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": prompt}
-    ],
-    max_tokens=50)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=100
+    )
     print("Finished OpenAI call to get search keywords.")
-    keywords = response.choices[0].message.content.strip()
-    print("OpenAI response JSON for search keywords:\n", keywords)
+    # print(f"Raw response: {response}")
+    raw_content = response.choices[0].message.content.strip()
+    if raw_content.startswith("```json"):
+        raw_content = raw_content[7:-3].strip()
+    keywords = json.loads(raw_content)
+    print("OpenAI response JSON for search keywords:\n", json.dumps(keywords, indent=2))
     return keywords
+
 
 def search_index(keywords):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
-    # Convert keywords to a SQL search query
-    keyword_list = keywords.split()
-    keyword_query = " OR ".join([f"contents LIKE '%{keyword}%'" for keyword in keyword_list])
+    keyword_query = " OR ".join([f"contents LIKE '%{keyword}%'" for keyword in keywords])
 
     query = f'''
     SELECT message_id, name, timestamp, contents, attachments, link
@@ -66,49 +52,69 @@ def search_index(keywords):
     results = cursor.fetchall()
 
     conn.close()
-
     return results
 
-def process_results(results):
-    # Summarize and format results
-    summarized_results = ""
-    for result in results:
-        summarized_results += f"ID: {result[0]}\nUser: {result[1]}\nTimestamp: {result[2]}\nContents: {result[3]}\nLink: {result[5]}\n\n"
-    return summarized_results
+def get_message_embeddings(messages):
+    response = client.embeddings.create(input=[msg[3] for msg in messages], model="text-embedding-3-large")
+    embeddings = [item.embedding for item in response.data]
+    return embeddings
 
-def no_cost_mode(query):
+def get_query_embedding(query):
+    response = client.embeddings.create(input=[query], model="text-embedding-3-large")
+    embedding = response.data[0].embedding
+    return embedding
+
+
+def calculate_similarity(embeddings, query_embedding):
+    similarities = [np.dot(embed, query_embedding) for embed in embeddings]
+    return similarities
+
+def contextual_expansion(selected_messages, num_context=10):
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
-    keyword_query = " OR ".join([f"contents LIKE '%{query}%'" for query in query])
-
-    query = f'''
-    SELECT message_id, name, timestamp, contents, attachments, link
-    FROM messages
-    WHERE {keyword_query}
-    LIMIT 10
-    '''
-
-    cursor.execute(query)
-    results = cursor.fetchall()
+    expanded_messages = []
+    for message in selected_messages:
+        message_id = message[0]
+        query = f'''
+        SELECT message_id, name, timestamp, contents, attachments, link
+        FROM messages
+        WHERE message_id >= {message_id - num_context} AND message_id <= {message_id + num_context}
+        ORDER BY message_id
+        '''
+        cursor.execute(query)
+        context = cursor.fetchall()
+        expanded_messages.append(context)
 
     conn.close()
+    return expanded_messages
 
-    return results
-
-def summarize_conversation(original_query, results):
-    messages = "\n\n".join([f"User: {result[1]}\nTimestamp: {result[2]}\nContents: {result[3]}\nLink: {result[5]}" for result in results])
-    prompt = f"Given the original query: '{original_query}', and the following messages between two friends, provide a summary with relevant links:\n\n{messages}\n\nPlease return full Discord links, not hyperlinks."
+def summarize_conversation(original_query, expanded_messages):
+    conversations = "\n\n".join(["\n".join([f"User: {msg[1]}\nTimestamp: {msg[2]}\nContents: {msg[3]}\nLink: {msg[5]}" for msg in messages]) for messages in expanded_messages])
+    prompt = f"Given the original query: '{original_query}', and the following messages between two friends, provide a summary with relevant links:\n\n{conversations}\n\nPlease return full Discord links, not hyperlinks."
 
     print("Starting OpenAI call to summarize conversation...")
-    response = client.chat.completions.create(model="gpt-4o",
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": prompt}
-    ],
-    max_tokens=500)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=500)
     print("Finished OpenAI call to summarize conversation.")
     summary = response.choices[0].message.content.strip()
+    return summary
+
+def process_query(search_term):
+    keywords = get_search_keywords(search_term)
+    initial_results = search_index(keywords)
+    query_embedding = get_query_embedding(search_term)
+    message_embeddings = get_message_embeddings(initial_results)
+    similarities = calculate_similarity(message_embeddings, query_embedding)
+    top_n = sorted(range(len(similarities)), key=lambda i: similarities[i], reverse=True)[:10]
+    selected_messages = [initial_results[i] for i in top_n]
+    expanded_messages = contextual_expansion(selected_messages)
+    summary = summarize_conversation(search_term, expanded_messages)
     return summary
 
 def main():
@@ -118,9 +124,7 @@ def main():
             results = no_cost_mode(search_term)
             print(process_results(results))
         else:
-            keywords = get_search_keywords(search_term)
-            results = search_index(keywords)
-            summary = summarize_conversation(search_term, results)
+            summary = process_query(search_term)
             print(summary)
     else:
         while True:
@@ -131,9 +135,7 @@ def main():
                 results = no_cost_mode(query)
                 print(process_results(results))
             else:
-                keywords = get_search_keywords(query)
-                results = search_index(keywords)
-                summary = summarize_conversation(query, results)
+                summary = process_query(query)
                 print(summary)
 
 if __name__ == "__main__":

@@ -1,14 +1,12 @@
 import json
 import sqlite3
 import argparse
+from src.utils import load_config
 import os
 from tqdm import tqdm
 
-# Mapping for user IDs
-id_to_name = {
-    1240679847676739724: 'Rave',
-    382334233345261579: 'Cas'
-}
+
+id_to_name = load_config()['id_to_name']
 
 # Function to create the database
 def create_database(db_path):

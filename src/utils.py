@@ -1,6 +1,16 @@
 import openai
+import sqlite3
 import os
 import sys
+import json
+
+def load_config(config_path='config.json'):
+    config = {}
+    with open(config_path, 'r') as config_file:
+        conf = json.load(config_file)
+        # print(f"Config: {json.dumps(conf)}")
+    config['id_to_name'] = {int(k): v for k, v in conf['id_to_name'].items()}
+    return config
 
 def get_openai_key():
     openai_key = os.getenv("OPENAI_KEY")
@@ -20,4 +30,23 @@ def initialize_openai():
         sys.exit(1)
     client = openai.OpenAI(api_key=openai_key)
     return client
+
+import sqlite3
+
+def query_messages_by_timestamp_range(db_path, start_timestamp, end_timestamp):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    query = f'''
+    SELECT message_id, name, timestamp, contents, attachments link
+    FROM messages
+    WHERE timestamp >= ? AND timestamp <= ?
+    ORDER BY timestamp
+    '''
+
+    cursor.execute(query, (start_timestamp, end_timestamp))
+    results = cursor.fetchall()
+
+    conn.close()
+    return results
 

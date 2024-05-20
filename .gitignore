@@ -169,3 +169,6 @@ database/*
 
 # Keys
 OPENAI_KEY.txt
+
+# Configs
+config.json

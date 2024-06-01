@@ -166,6 +166,7 @@ cython_debug/
 # Data
 import/*
 database/*
+summaries
 
 # Keys
 OPENAI_KEY.txt

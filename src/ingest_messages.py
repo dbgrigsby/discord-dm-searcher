@@ -83,6 +83,7 @@ def insert_data(db_path, data_path):
 def main():
     parser = argparse.ArgumentParser(description="Ingest message data into SQLite database")
     parser.add_argument('data_path', type=str, help='Relative path to the message data JSON file')
+    parser.add_argument('data_path_two', type=str, help='Relative path to the message data JSON file')
     
     args = parser.parse_args()
     
@@ -98,6 +99,7 @@ def main():
     
     create_database(db_path)
     insert_data(db_path, args.data_path)
+    insert_data(db_path, args.data_path_two)
 
 if __name__ == "__main__":
     main()

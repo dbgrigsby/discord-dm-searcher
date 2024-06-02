@@ -76,9 +76,10 @@ def summarize_conversation(client, messages, start_date, end_date):
 
     prompt = (
         f"Given the messages between two friends from {start_date} to {end_date}, "
-        "provide a summary of the main things that went on in the time period. Focus on important things that occured, as well as repeat occurences"
-        "Generally describe the whole period as a single unit, although do add newlines to avoid huge paragraphs. Avoid mentioning dates except for notable events. Maintain sequentiality. But always include user names for clarity. Use Discord markdown formatting (headers, bullets, etc) in the reply."
-        "Include interesting or particularly noteworthy quotes :\n\n"
+        "provide a summary of the main things that went on in the time period. begin it with '# <month> <year>' Focus on important things that occured, as well as repeat occurences"
+        "Generally describe the whole period as a single paragraph, only use two if it's very difficult to summarize. Avoid mentioning dates except for notable events. Include user names for clarity. Use fewer transitional words, more specifics."
+        " Use proper Discord markdown formatting in the reply"
+        "If a single quote is especially noteworthy or humorous and not trivial, include it in the paragraph in quotation marks, but not every paragraph will have a quote:\n\n"
         f"{conversations}\n\n"
     )
     print(f"Actual prompt length: {len(prompt)}")
@@ -89,7 +90,7 @@ def summarize_conversation(client, messages, start_date, end_date):
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=4096
+        max_tokens=2048
     )
     
     summary = response.choices[0].message.content.strip()
@@ -153,7 +154,8 @@ def main(start_date, num_days, max_chunks, window):
         print(f"Last message in chunk: {chunk[-1]}")
         summary = summarize_conversation(client, [chunk], chunk_start_date, chunk_end_date)
         time_prefix = f"* Start of time period: {message_link_for(chunk[0][0])}\n* End of time period: {message_link_for(chunk[-1][0])}"
-        summary_text = f"# Summary for period {chunk_start_date} to {chunk_end_date}:\n{time_prefix}\n{summary}\n"
+        summary_text = f"{time_prefix}\n{summary}\n"
+        summary_text = summary
         file_name = save_to_file(summary_text, chunk_start_date, chunk_end_date, window)
         print(summary_text)
 

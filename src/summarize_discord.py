@@ -76,12 +76,14 @@ def summarize_conversation(client, messages, start_date, end_date):
 
     prompt = (
         f"Given the messages between two friends from {start_date} to {end_date}, "
-        "provide a summary of the main things that went on in the time period. begin it with '# <month> <year>' Focus on important things that occured, as well as repeat occurences"
-        "Generally describe the whole period as a single paragraph, only use two if it's very difficult to summarize. Avoid mentioning dates except for notable events. Include user names for clarity. Use fewer transitional words, more specifics."
-        " Use proper Discord markdown formatting in the reply"
-        "If a single quote is especially noteworthy or humorous and not trivial, include it in the paragraph in quotation marks, but not every paragraph will have a quote:\n\n"
-        f"{conversations}\n\n"
+        "provide a factual and succinct summary of the main events and repeated topics discussed during this period. Start with '# <month> <year>'. "
+        "Focus on concrete events, notable quotes, and specific recurring topics. Avoid general or flowery descriptions and transitional phrases. "
+        "Describe the whole period as a *single* paragraph, only use two if it's very difficult to summarize. Never use more than two"
+        "Only use names when necessary for clarity. "
+        "Use proper Discord markdown formatting in the reply.\n\n Conversations follow:"
+        f"{conversations}"
     )
+
     print(f"Actual prompt length: {len(prompt)}")
     
     response = client.chat.completions.create(

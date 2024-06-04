@@ -158,7 +158,7 @@ def summarize_conversation(original_query, expanded_messages):
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=3000
+        max_tokens=500
     )
     print("Finished OpenAI call to summarize conversation.")
     summary = response.choices[0].message.content.strip()

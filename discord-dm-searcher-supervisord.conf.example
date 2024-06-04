@@ -1,5 +1,5 @@
 [program:discord-dm-searcher]
-command=sh run_container.sh
+command=sh ./run_container.sh 2>&1 | ./log_with_timestamp.sh
 directory=/home/YOU/discord-dm-searcher
 autostart=true
 autorestart=true

@@ -17,6 +17,18 @@ def get_discord_token():
     else:
         return os.getenv('DISCORD_TOKEN')
 
+# Split text at last newline
+def split_text(text, max_length=1900):
+    chunks = []
+    while len(text) > max_length:
+        split_pos = text.rfind('\n', 0, max_length)
+        if split_pos == -1:
+            split_pos = max_length
+        chunks.append(text[:split_pos])
+        text = text[split_pos:].lstrip('\n')
+    chunks.append(text)
+    return chunks
+
 @bot.tree.command(name="search", description="Search Discord DMs")
 @app_commands.describe(
     search_term="Search term",
@@ -35,13 +47,15 @@ async def search(interaction: discord.Interaction, search_term: str, keyword_ove
 
     summary = process_query(search_term, keyword_override, send_all_matches)
 
-    # Split the summary into chunks if it exceeds 2000 characters
-    if len(summary) > 2000:
-        chunks = [summary[i:i+2000] for i in range(0, len(summary), 2000)]
+    if len(summary) > 1900:
+        chunks = split_text(summary)
         for chunk in chunks:
-            await interaction.followup.send(chunk)
+            message = await interaction.followup.send(chunk)
+            await message.edit(suppress=True)
     else:
-        await interaction.followup.send(summary)
+        message = await interaction.followup.send(summary)
+        await message.edit(suppress=True)
+
 
 @bot.event
 async def on_ready():

@@ -148,7 +148,7 @@ def summarize_conversation(original_query, expanded_messages):
         ]
     )
     # print(f"First message or so: {conversations[:150]}")
-    prompt = f"Given the original query: '{original_query}', and the following messages between two friends {names[0]} and {names[1]}, provide an answer to the search term, summarizing at least 1 but not more than 5 occurences of the search term. Make sure to provide a paragraph at the top summarizing, especially if the original query asked for it, before the links. Include links. Please return one discord link for each example to the most relevant message, considering who sent the message and what the initial query says, not hyperlinked, just raw links. Summarize the conversation's main point, don't just focus on the best message. Quote messages from the conversations if they are especially funny or poignant.  Links are formatted as https://discord.com/channels/@me/383761744830529537/message_id , make sure that 383.../ is always there, or the link will not work. Include a year, month day and time of day description for each result. Here are the messages:\n:\n\n{conversations}\n\n"
+    prompt = f"Given the original query: '{original_query}', and the following messages between two friends {names[0]} and {names[1]}, provide an answer to the search term, summarizing at least 1 but not more than 5 occurences of the search term. Make sure to provide a paragraph at the top summarizing, especially if the original query asked for it, before the links. Include links. Please return one discord link for each example to the most relevant message, considering who sent the message and what the initial query says, not hyperlinked, just raw links. Summarize the conversation's main point, don't just focus on the best message. Avoid flowery text in your descriptions. Quote messages from the conversations if they are especially funny or poignant.  Links are formatted as https://discord.com/channels/@me/383761744830529537/message_id , make sure that 383.../ is always there, or the link will not work. Include a year, month day and time of day description for each result. Here are the messages:\n:\n\n{conversations}\n\n"
 
     print("Starting OpenAI call to summarize conversation...")
     # print(f"Prompt: {prompt}")
@@ -158,7 +158,7 @@ def summarize_conversation(original_query, expanded_messages):
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=500
+        max_tokens=2000
     )
     print("Finished OpenAI call to summarize conversation.")
     summary = response.choices[0].message.content.strip()

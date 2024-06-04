@@ -25,7 +25,7 @@ run: ingest_data virtualenv_run
 
 .PHONY: build
 build:
-	docker build -t discord-dm-searcher .
+	sudo docker build -t discord-dm-searcher .
 
 .PHONY: clean
 clean:

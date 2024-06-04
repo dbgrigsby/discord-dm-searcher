@@ -72,7 +72,6 @@ def get_message_embeddings(messages):
         total_characters = sum(len(text) for text in message_texts)
         total_words = sum(len(text.split()) for text in message_texts)
         print(f"Submitting {len(message_texts)} messages to `text-embedding-3-large`, with a total length of {total_characters} characters and {total_words} words.")
-        sleep(10)
         response = client.embeddings.create(input=message_texts, model="text-embedding-3-large")
         embeddings = [item.embedding for item in response.data]
     except Exception as e:
@@ -187,7 +186,7 @@ def save_to_file(summary_text, query):
 
     return file_name
 
-def process_query(search_term, keyword_override, send_all_matches):
+def process_query(search_term, keyword_override=None, send_all_matches=False):
     # Ask OpenAI for good search terms for the input search
     if keyword_override:
         keywords = keyword_override

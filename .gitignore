@@ -171,6 +171,7 @@ searches/
 
 # Keys
 OPENAI_KEY.txt
+DISCORD_TOKEN.txt
 
 # Configs
 config.json

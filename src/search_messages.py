@@ -4,7 +4,7 @@ import os
 import traceback
 import sqlite3
 import json
-import numpy as np
+import math
 from datetime import datetime, timedelta
 from src.utils import initialize_openai, query_messages_by_timestamp_range, trim_messages
 from src.utils import load_config
@@ -87,7 +87,9 @@ def get_query_embedding(query):
     return embedding
 
 def calculate_similarity(embeddings, query_embedding):
-    similarities = [np.dot(embed, query_embedding) for embed in embeddings]
+    def dot_product(v1, v2):
+        return sum(x*y for x, y in zip(v1, v2))
+    similarities = [dot_product(embed, query_embedding) for embed in embeddings]
     return similarities
 
 def select_relevant_messages(search_term, messages):

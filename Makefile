@@ -23,6 +23,10 @@ ingest_data:
 run: ingest_data virtualenv_run
 	${PYTHON} -m src.bot
 
+.PHONY: build
+build:
+	docker build -t discord-dm-searcher .
+
 .PHONY: clean
 clean:
 	rm -rf virtualenv_run/

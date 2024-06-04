@@ -1,0 +1,6 @@
+_pycache__
+virtualenv_run
+summaries
+searches
+database
+*.log

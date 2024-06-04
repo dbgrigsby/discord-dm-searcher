@@ -10,13 +10,6 @@ from src.utils import initialize_openai, query_messages_by_timestamp_range, trim
 from src.utils import load_config
 from src.utils import estimate_tokens
 
-# Command-line argument parsing
-parser = argparse.ArgumentParser(description="Search Discord DMs")
-parser.add_argument('search_term', type=str, nargs='*', help='Search term')
-parser.add_argument('--no-cost', action='store_true', help='Skip ChatGPT interaction')
-parser.add_argument('--keyword-override', action='append', type=str, help='Just search specific keywords with this prompt.')
-parser.add_argument('--send-all-matches', action='store_true', default=False, help='Send all matches to OpenAI, dont use text embeddings to do initial screening. May crash with too many matches!!')
-args = parser.parse_args()
 
 client = initialize_openai()
 conf = load_config()
@@ -237,27 +230,23 @@ def process_query(search_term, keyword_override, send_all_matches):
     save_to_file(summary, search_term)
     return summary
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Search Discord DMs")
+    parser.add_argument('search_term', type=str, nargs='*', help='Search term')
+    parser.add_argument('--no-cost', action='store_true', help='Skip ChatGPT interaction')
+    parser.add_argument('--keyword-override', action='append', type=str, help='Just search specific keywords with this prompt.')
+    parser.add_argument('--send-all-matches', action='store_true', default=False, help='Send all matches to OpenAI, dont use text embeddings to do initial screening. May crash with too many matches!!')
+    args = parser.parse_args()
+    return args
+
 
 def main():
+    args = parse_args()
+
     if args.search_term:
         search_term = ' '.join(args.search_term)
-        if args.no_cost:
-            results = no_cost_mode(search_term)
-            print(process_results(results))
-        else:
-            summary = process_query(search_term, args.keyword_override, args.send_all_matches)
-            print(summary)
-    else:
-        while True:
-            query = input("Enter search query: ")
-            if query.lower() == 'exit':
-                break
-            if args.no_cost:
-                results = no_cost_mode(query)
-                print(process_results(results))
-            else:
-                summary = process_query(query)
-                print(summary)
+        summary = process_query(search_term, args.keyword_override, args.send_all_matches)
+        print(summary)
 
 if __name__ == "__main__":
     main()

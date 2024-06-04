@@ -1,0 +1,8 @@
+[program:discord-dm-searcher]
+command=bash -c 'docker rm -f discord-dm-searcher || true && docker run --name discord-dm-searcher -v /path/to/your/summaries:/app/summaries -v /path/to/your/searches:/app/searches discord-dm-searcher'
+directory=/path/to/your/project/root
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/discord-dm-searcher.err.log
+stdout_logfile=/var/log/discord-dm-searcher.out.log
+user=root

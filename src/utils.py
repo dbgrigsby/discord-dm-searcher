@@ -10,6 +10,8 @@ def load_config(config_path='config.json'):
         conf = json.load(config_file)
         # print(f"Config: {json.dumps(conf)}")
     config['id_to_name'] = {int(k): v for k, v in conf['id_to_name'].items()}
+    config['allowed_servers'] = [int(server) for server in conf.get('allowed_servers', [])]
+    config['allowed_users'] = [int(user) for user in conf.get('allowed_users', [])]
     return config
 
 def get_openai_key():

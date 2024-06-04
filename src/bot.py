@@ -4,7 +4,9 @@ from discord.ext import commands
 import os
 
 from src.search_messages import process_query
+from src.utils import load_config
 
+config = load_config()
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -21,8 +23,15 @@ def get_discord_token():
     keyword_override="Specific keywords to search",
     send_all_matches="Send all matches to OpenAI (may crash with too many matches)"
 )
-async def search(interaction: discord.Interaction, search_term: str, no_cost: bool = False, keyword_override: str = None, send_all_matches: bool = False):
-    await interaction.response.send_message("Processing your request to find {search_term},  please wait...")
+async def search(interaction: discord.Interaction, search_term: str, keyword_override: str = None, send_all_matches: bool = False):
+    allowed_servers = config['allowed_servers']
+    allowed_users = config['allowed_users']
+
+    if interaction.guild_id not in allowed_servers or interaction.user.id not in allowed_users:
+        await interaction.response.send_message(f"You aren't allowed to use this, <@{interaction.user_id}> :)")
+        return
+
+    await interaction.response.send_message(f"Processing your request to find {search_term}, please wait...")
 
     summary = process_query(search_term, keyword_override, send_all_matches)
     

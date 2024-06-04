@@ -1,4 +1,4 @@
-tqdm
-discord.py
-openai
-numpy
+tqdm==4.66.1
+discord.py==2.3.2
+openai==1.31.0
+numpy==1.26.0

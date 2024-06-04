@@ -1,6 +1,6 @@
 [program:discord-dm-searcher]
-command=bash -c 'docker rm -f discord-dm-searcher || true && docker run --name discord-dm-searcher -v /path/to/your/summaries:/app/summaries -v /path/to/your/searches:/app/searches discord-dm-searcher'
-directory=/path/to/your/project/root
+command=bash -c 'docker rm -f discord-dm-searcher || true && docker run --name discord-dm-searcher -v /home/YOU/discord-dm-searcher/summaries:/app/summaries -v /home/YOU/discord-dm-searcher/searches:/app/searches -v /home/YOU/discord-dm-searcher/import:/app/import -v /home/YOU/discord-dm-searcher/OPENAI_KEY.txt:/app/OPENAI_KEY.txt:ro discord-dm-searcher'
+directory=/home/YOU/discord-dm-searcher
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/discord-dm-searcher.err.log

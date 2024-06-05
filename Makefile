@@ -30,3 +30,7 @@ build:
 .PHONY: clean
 clean:
 	rm -rf virtualenv_run/
+
+.PHONY: test
+test: virtualenv_run
+	${PYTHON} -m pytest --disable-warnings

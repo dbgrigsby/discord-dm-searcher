@@ -133,7 +133,7 @@ def main(start_date, num_days, max_chunks, window):
         start_date = get_first_date(cursor)
         if not start_date:
             print("No messages found in the database.")
-            return
+            return "He's gone, Spock"
         start_date = start_date.split(' ')[0]  # Extract the date part
 
     current_date = datetime.strptime(start_date, '%Y-%m-%d')
@@ -144,10 +144,10 @@ def main(start_date, num_days, max_chunks, window):
     messages = fetch_messages(cursor, current_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
 
     if not messages:
-        return
+        return "No messages :("
 
     chunked_messages = chunk_messages(messages, window)
-
+    total_summary = ""
     for chunk in chunked_messages:
         chunk_start_date = datetime.strptime(chunk[0][2], '%Y-%m-%d %H:%M:%S')
         chunk_end_date = datetime.strptime(chunk[-1][2], '%Y-%m-%d %H:%M:%S')
@@ -160,14 +160,16 @@ def main(start_date, num_days, max_chunks, window):
         summary_text = summary
         file_name = save_to_file(summary_text, chunk_start_date, chunk_end_date, window)
         print(summary_text)
+        total_summary += summary_text
 
         # Fallback for if we go too far, unlikely
         chunks_processed += 1
         if chunks_processed >= max_chunks:
             print(f"######### Warning!!! We Exceeded the max chunk count and ended early at {chunk_end_date}")
-            return
+            return "Bridge to Enterprise: Stop whatever you are doing, if you give it any more she'll blow captain!"
 
     conn.close()
+    return total_summary
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Summarize Discord DM conversations.')

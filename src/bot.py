@@ -5,6 +5,7 @@ import os
 
 from src.search_messages import process_query
 from src.utils import load_config
+from src.summarize_discord import main as summarize_main
 
 config = load_config()
 intents = discord.Intents.default()
@@ -43,7 +44,7 @@ async def search(interaction: discord.Interaction, search_term: str, keyword_ove
         await interaction.response.send_message("You aren't allowed to use this :)")
         return
 
-    await interaction.response.send_message(f"Processing your request to find '{search_term}', please wait about 30 seconds...")
+    await interaction.response.send_message(f"Working on answering '{search_term}', please wait about 30 seconds...")
 
     summary = process_query(search_term, keyword_override, send_all_matches)
 
@@ -51,10 +52,39 @@ async def search(interaction: discord.Interaction, search_term: str, keyword_ove
         chunks = split_text(summary)
         for chunk in chunks:
             message = await interaction.followup.send(chunk)
-            await message.edit(suppress=True)
     else:
         message = await interaction.followup.send(summary)
-        await message.edit(suppress=True)
+
+# Create the summarize slash command
+@bot.tree.command(name="summarize", description="Summarize Discord DM conversations")
+@app_commands.describe(
+    start_date="Start date for summarization in format YYYY-MM-DD",
+    num_days="Number of days to summarize (default 30)",
+)
+async def summarize(interaction: discord.Interaction, start_date: str = None, num_days: int = 30):
+    allowed_servers = config['allowed_servers']
+    allowed_users = config['allowed_users']
+
+    if interaction.guild_id not in allowed_servers or interaction.user.id not in allowed_users:
+        await interaction.response.send_message("You aren't allowed to use this :)")
+        return
+
+    if num_days > 61:
+        await interaction.response.send_message("The 'days' parameter cannot be greater than 61.")
+        return
+
+    await interaction.response.send_message(f"Summarizing conversations from '{start_date}' for {num_days} days, please wait about 30 seconds")
+
+    try:
+        summary = summarize_main(start_date, num_days, max_chunks=10, window=120000)
+        if len(summary) > 1900:
+            chunks = split_text(summary)
+            for chunk in chunks:
+                message = await interaction.followup.send(chunk)
+        else:
+            message = await interaction.followup.send(summary)
+    except Exception as e:
+        await interaction.followup.send(f"An error occurred: {str(e)}")
 
 
 @bot.event
@@ -62,8 +92,12 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     await bot.tree.sync()
 
-token = get_discord_token()
-if token:
-    bot.run(token)
-else:
-    print("Discord token not found. Please set it in DISCORD_TOKEN.txt or as an environment variable")
+def main():
+    token = get_discord_token()
+    if token:
+        bot.run(token)
+    else:
+        print("Discord token not found. Please set it in DISCORD_TOKEN.txt or as an environment variable")
+
+if __name__ == '__main__':
+    main()

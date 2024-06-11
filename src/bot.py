@@ -46,14 +46,17 @@ async def search(interaction: discord.Interaction, search_term: str, keyword_ove
 
     await interaction.response.send_message(f"Working on answering '{search_term}', please wait about 30 seconds...")
 
-    summary = process_query(search_term, keyword_override, send_all_matches)
+    try:
+        summary = process_query(search_term, keyword_override, send_all_matches)
 
-    if len(summary) > 1900:
-        chunks = split_text(summary)
-        for chunk in chunks:
-            message = await interaction.followup.send(chunk)
-    else:
-        message = await interaction.followup.send(summary)
+        if len(summary) > 1900:
+            chunks = split_text(summary)
+            for chunk in chunks:
+                message = await interaction.followup.send(chunk)
+        else:
+            message = await interaction.followup.send(summary)
+    except Exception as e:
+        await interaction.followup.send(f"An error occurred: {str(e)}")
 
 # Create the summarize slash command
 @bot.tree.command(name="summarize", description="Summarize Discord DM conversations")

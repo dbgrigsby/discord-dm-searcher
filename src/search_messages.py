@@ -165,26 +165,27 @@ def summarize_conversation(original_query, expanded_messages):
     return summary
 
 def save_to_file(summary_text, query):
-    # Create summaries directory if it doesn't exist
-    if not os.path.exists('searches'):
-        os.makedirs('searches')
 
-    # Generate base file name
-    base_file_name = f"searches/summary_{query}.txt"
-    file_name = base_file_name
-    
-    # Append suffix if file already exists
-    counter = 2
-    while os.path.exists(file_name):
-        file_name = f"{base_file_name[:-4]}-{counter}.txt"
-        counter += 1
+  if not os.path.exists('searches'):
+    os.makedirs('searches')
 
-    # Write the summary text to the file
-    with open(file_name, 'w') as file:
-        file.write(summary_text)
-        print(f"Saved search result to {file_name}")
+  sanitized_query = os.path.splitext(query)[0]  # Remove file extension if present
+  sanitized_query = sanitized_query.replace("/", "_") 
+  sanitized_query = sanitized_query[:100]  
 
-    return file_name
+  base_file_name = f"searches/summary_{sanitized_query}.txt"
+  file_name = base_file_name
+
+  counter = 2
+  while os.path.exists(file_name):
+    file_name = f"{base_file_name[:-4]}-{counter}.txt"
+    counter += 1
+
+  with open(file_name, 'w') as file:
+    file.write(summary_text)
+    print(f"Saved search result to {file_name}")
+
+  return file_name
 
 def process_query(search_term, keyword_override=None, send_all_matches=False):
     # Ask OpenAI for good search terms for the input search

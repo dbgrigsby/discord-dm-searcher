@@ -99,30 +99,31 @@ def summarize_conversation(client, messages, start_date, end_date):
     return summary
 
 def save_to_file(summary_text, start_date, end_date, window_size):
-    # Convert datetime objects to string in YYYY-MM-DD format
-    start_date_str = start_date.strftime('%Y-%m-%d')
-    end_date_str = end_date.strftime('%Y-%m-%d')
+  start_date_str = start_date.strftime('%Y-%m-%d')
+  end_date_str = end_date.strftime('%Y-%m-%d')
 
-    # Create summaries directory if it doesn't exist
-    if not os.path.exists('summaries'):
-        os.makedirs('summaries')
+  if not os.path.exists('summaries'):
+    os.makedirs('summaries')
 
-   
-    # Generate base file name
-    base_file_name = f"summaries/summary_{start_date_str}_{end_date_str}_window-{window_size}.txt"
-    file_name = base_file_name
-    
-    # Append suffix if file already exists
-    counter = 2
-    while os.path.exists(file_name):
-        file_name = f"{base_file_name[:-4]}-{counter}.txt"
-        counter += 1
+  try:
+    window_size = int(window_size)
+  except ValueError:
+    raise ValueError("Window size must be an integer")
 
-    # Write the summary text to the file
-    with open(file_name, 'w') as file:
-        file.write(summary_text)
+  base_file_name = f"summaries/summary_{start_date_str}_{end_date_str}_window-{window_size}.txt"
+  file_name = base_file_name
 
-    return file_name
+  counter = 2
+  while os.path.exists(file_name):
+    file_name = f"{base_file_name[:-4]}-{counter}.txt"
+    counter += 1
+
+  with open(file_name, 'w') as file:
+    file.write(summary_text)
+
+  return file_name
+
+
 
 def main(start_date, num_days, max_chunks, window):
     client = initialize_openai()

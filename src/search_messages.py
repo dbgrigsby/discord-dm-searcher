@@ -150,17 +150,23 @@ def contextual_expansion(messages, minutes_nearby=60):
 def summarize_conversation(original_query, expanded_messages):
     # print(f"First expanded message: {expanded_messages[0]}")
     # conversations = "\n\n".join(["\n".join([f"User: {msg[1]}\nTimestamp: {msg[2]}\nContents: {msg[3]}\nmessage_id: {msg[0]}" for msg in messages]) for messages in expanded_messages])
-    conversations = "\n\n".join(
-        [
-            "\n".join(
-                [
-                    f"User: {msg[1]}, Date: {msg[2][:10]}, Contents: {msg[3]}, message_id: {msg[0]}"
-                    for msg in msg_tuple
-                ]
-            )
-            for msg_tuple in expanded_messages
-        ]
-    )
+    total_tokens = 0
+    conversations = ""
+    average_word_length = 4.7  # Assuming average word length in English
+    
+    for msg_tuple in expanded_messages:
+        group_messages = "\n".join([f"User: {msg[1]}, Date: {msg[2][:10]}, Contents: {msg[3]}" for msg in msg_tuple])
+    
+        num_words = len(group_messages.split())
+        estimated_tokens = num_words * average_word_length + 100
+    
+        if total_tokens + estimated_tokens > 124000:
+            break
+    
+        conversations += group_messages + "\n\n"
+        total_tokens += estimated_tokens
+    
+
     # print(f"First message or so: {conversations[:150]}")
     prompt = f"Given the original query: '{original_query}', and the following messages between two friends {names[0]} and {names[1]}, provide an answer to the search term, summarizing at least 1 but not more than 5 occurences of the search term. Make sure to provide a paragraph at the top summarizing, especially if the original query asked for it, before the links. Include links. Please return one discord link for each example to the most relevant message, considering who sent the message and what the initial query says, not hyperlinked, just raw links. Summarize the conversation's main point, don't just focus on the best message. Avoid flowery text in your descriptions. Quote messages from the conversations if they are especially funny or poignant.  Links are formatted as https://discord.com/channels/@me/383761744830529537/message_id , make sure that 383.../ is always there, or the link will not work. Do NOT use markdown formatted EVER for the message links! No parentheses or brackets around them, ever.  Include a year, month day and time of day description for each result. Here are the messages:\n:\n\n{conversations}\n\n"
 

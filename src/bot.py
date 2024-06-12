@@ -33,7 +33,7 @@ def split_text(text, max_length=1900):
 @bot.tree.command(name="search", description="Search Discord DMs")
 @app_commands.describe(
     search_term="Search term",
-    keyword_override="Specific keywords to search",
+    keyword_override="A comma separated list of specific keywords to search. Don't use spaces next to the commas",
     send_all_matches="Send all matches to OpenAI (may crash with too many matches)"
 )
 async def search(interaction: discord.Interaction, search_term: str, keyword_override: str = None, send_all_matches: bool = False):

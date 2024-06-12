@@ -65,19 +65,33 @@ def search_index(keywords):
     return results
 
 def get_message_embeddings(messages):
+    max_tokens = 900000
+    token_count = 0
+    truncated_messages = []
+
     try:
-        # print(f"{[msg[3] for msg in messages[:2]]}")
-        # print(f"{[msg[3] for msg in messages[:-2]]}")
-        message_texts = [msg[3] for msg in messages]
-        total_characters = sum(len(text) for text in message_texts)
-        total_words = sum(len(text.split()) for text in message_texts)
-        print(f"Submitting {len(message_texts)} messages to `text-embedding-3-large`, with a total length of {total_characters} characters and {total_words} words.")
-        response = client.embeddings.create(input=message_texts, model="text-embedding-3-large")
+        # Extract the text from the messages
+        for msg in messages:
+            text = msg[3]
+            words = text.split()
+            word_count = len(words)
+            if token_count + word_count > max_tokens:
+                break
+            truncated_messages.append(text)
+            token_count += word_count
+
+        total_characters = sum(len(text) for text in truncated_messages)
+        total_words = sum(len(text.split()) for text in truncated_messages)
+        print(f"Submitting {len(truncated_messages)} messages to `text-embedding-3-large`, with a total length of {total_characters} characters and {total_words} words.")
+
+        response = client.embeddings.create(input=truncated_messages, model="text-embedding-3-large")
         embeddings = [item.embedding for item in response.data]
+        
     except Exception as e:
         traceback.print_exc()
-        print(f"failed on calculating embeddings for {messages}")
+        print(f"failed on calculating embeddings for {len(messages)} messages")
         raise e
+
     return embeddings
 
 def get_query_embedding(query):
@@ -148,7 +162,7 @@ def summarize_conversation(original_query, expanded_messages):
         ]
     )
     # print(f"First message or so: {conversations[:150]}")
-    prompt = f"Given the original query: '{original_query}', and the following messages between two friends {names[0]} and {names[1]}, provide an answer to the search term, summarizing at least 1 but not more than 5 occurences of the search term. Make sure to provide a paragraph at the top summarizing, especially if the original query asked for it, before the links. Include links. Please return one discord link for each example to the most relevant message, considering who sent the message and what the initial query says, not hyperlinked, just raw links. Summarize the conversation's main point, don't just focus on the best message. Avoid flowery text in your descriptions. Quote messages from the conversations if they are especially funny or poignant.  Links are formatted as https://discord.com/channels/@me/383761744830529537/message_id , make sure that 383.../ is always there, or the link will not work. Include a year, month day and time of day description for each result. Here are the messages:\n:\n\n{conversations}\n\n"
+    prompt = f"Given the original query: '{original_query}', and the following messages between two friends {names[0]} and {names[1]}, provide an answer to the search term, summarizing at least 1 but not more than 5 occurences of the search term. Make sure to provide a paragraph at the top summarizing, especially if the original query asked for it, before the links. Include links. Please return one discord link for each example to the most relevant message, considering who sent the message and what the initial query says, not hyperlinked, just raw links. Summarize the conversation's main point, don't just focus on the best message. Avoid flowery text in your descriptions. Quote messages from the conversations if they are especially funny or poignant.  Links are formatted as https://discord.com/channels/@me/383761744830529537/message_id , make sure that 383.../ is always there, or the link will not work. Do NOT use markdown formatted EVER for the message links! No parentheses or brackets around them, ever.  Include a year, month day and time of day description for each result. Here are the messages:\n:\n\n{conversations}\n\n"
 
     print("Starting OpenAI call to summarize conversation...")
     # print(f"Prompt: {prompt}")
@@ -187,11 +201,10 @@ def save_to_file(summary_text, query):
 
   return file_name
 
-def process_query(search_term, keyword_override=None, send_all_matches=False):
-    # Ask OpenAI for good search terms for the input search
+def process_query(search_term, keyword_override: str = None, send_all_matches=False):
     if keyword_override:
-        keywords = keyword_override
-        print(keywords)
+        keywords = [keyword.strip() for keyword in keyword_override.split(',')]
+        print(f"Overriden keywords: {keywords}")
     else:
         keywords_dict = get_search_keywords(search_term)
         keywords = keywords_dict.get("keywords", []) 
